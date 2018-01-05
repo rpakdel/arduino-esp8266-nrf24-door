@@ -1,6 +1,7 @@
 // setup a programmer as in
 // https://www.allaboutcircuits.com/projects/breadboard-and-program-an-esp-01-circuit-with-the-arduino-ide/
 
+#include <ArduinoHttpClient.h>
 #include <ESP8266WiFi.h>
 // define MYSSID and MYPASSWORD in this file. Do not commit to repo
 #include "myssid.h"
@@ -48,7 +49,19 @@ uint8_t currentSignalOut = HIGH;
 // Create an instance of the server
 // specify the port to listen on as an argument
 WiFiServer server(80);
-//AdafruitIO aio(AIO_USER, AIO_KEY);
+WiFiClient client;
+
+#define AIO_SERVER "io.adafruit.com"
+#define AIO_PORT 80
+#define AIO_CONTENT_TYPE "Content-Type"
+#define AIO_CONTENT_TYPE_APP_JSON "application/json"
+#define AIO_POST_DOOR_WAIT_MILLIS 60000
+#define AIO_CONTENT_LENGTH "Content-Length"
+#define AIO_CONTENT_LENGTH_VALUE 16
+#define AIO_DOOR_STATUS_HIGH "{ \"value\": \"1\" }"
+#define AIO_DOOR_STATUS_LOW "{ \"value\": \"0\" }"
+
+HttpClient httpClient(client, AIO_SERVER, AIO_PORT);
 
 void setup()
 {
@@ -60,10 +73,17 @@ void setup()
 
     initializeSignalOutPin();
 
+    startWifi();
+    startServer();
+    startClient();
+}
+
+void startWifi()
+{
     // Connect to WiFi network
     ESP_SERIAL.println();
     ESP_SERIAL.println();
-    ESP_SERIAL.print("Connecting to ");
+    ESP_SERIAL.print(F("SSID "));
     ESP_SERIAL.println(MYSSID);
 
     WiFi.begin(MYSSID, MYPASSWORD);
@@ -71,25 +91,71 @@ void setup()
     while (WiFi.status() != WL_CONNECTED)
     {
         delay(500);
-        ESP_SERIAL.print(".");
+        ESP_SERIAL.print(F("."));
     }
 
     ESP_SERIAL.println();
-    ESP_SERIAL.println("WiFi connected");
-
-    //aio.connect();
-    //ESP_SERIAL.println(aio.statusText());
-
-    // Start the server
-    server.begin();
-    ESP_SERIAL.println("Server started");
-
-    // Print the IP address
+    ESP_SERIAL.println(F("ESP_WIFI_CONNECTED"));
     ESP_SERIAL.println(WiFi.localIP());
+
 }
 
+void startServer()
+{
+    server.begin();
+    ESP_SERIAL.println(F("ESP_SERVER_STARTED"));
+}
+
+void startClient()
+{    
+    /*
+    ESP_SERIAL.println(F("ESP_GET"));
+
+    httpClient.beginRequest();
+    httpClient.get(AIO_FEED_URL);
+    // defined in aio.h file
+    httpClient.sendHeader(AIO_KEY_HEADER, AIO_KEY);
+    httpClient.endRequest();
+
+    int statusCode = httpClient.responseStatusCode();
+    String response = httpClient.responseBody();
+    ESP_SERIAL.println(statusCode);
+    ESP_SERIAL.println(response);
+    */
+}
+long prevPost = 0;
 void postDoorStatus()
 {
+    long m = millis();
+    long diff = m - prevPost;
+    if (diff < AIO_POST_DOOR_WAIT_MILLIS)
+    {
+        return;
+    }
+    prevPost = m;
+
+    ESP_SERIAL.println(F("ESP_POST_DOOR_AIO"));
+    int status = getDoorStatus();
+    httpClient.beginRequest();
+    httpClient.post(AIO_DATA_URL);
+    // defined in aio.h file
+    httpClient.sendHeader(AIO_KEY_HEADER, AIO_KEY);
+    httpClient.sendHeader(AIO_CONTENT_TYPE, AIO_CONTENT_TYPE_APP_JSON);
+    httpClient.sendHeader(AIO_CONTENT_LENGTH, AIO_CONTENT_LENGTH_VALUE);
+    httpClient.beginBody();
+    if (status == HIGH)
+    {
+        httpClient.print(AIO_DOOR_STATUS_HIGH);
+    }
+    else
+    {
+        httpClient.print(AIO_DOOR_STATUS_LOW);
+    }
+    httpClient.endRequest();
+
+    int statusCode = httpClient.responseStatusCode();
+    ESP_SERIAL.print(F("ESP_POST_DOOR_STATUS "));
+    ESP_SERIAL.println(statusCode);
 }
 
 int getDoorStatus()
@@ -235,7 +301,7 @@ void handleClient(WiFiClient& client)
     }    
     else if (req.indexOf(F("GET /api/v1/status")) >= 0)
     {
-        ESP_SERIAL.println("ESP_WAPI_STATUS");
+        ESP_SERIAL.println(F("ESP_WAPI_STATUS"));
         int result = getDoorStatus();
         // status
         String s = FPSTR(http_status_200_OK);
@@ -265,6 +331,8 @@ void handleClient(WiFiClient& client)
 
 void loop()
 {
+    postDoorStatus();
+
     // Check if a client has connected
     WiFiClient client = server.available();
     if (!client)
