@@ -47,7 +47,7 @@ class client {
     }
 
     checkStatus() {
-        fetch("api/v1/status", { method: "GET" })
+        fetch("api/v1/status", { method: "GET", credentials: "include" })
         .then(res =>{
             if (res.status === 200) {
                 res.text().then(r => {
@@ -95,7 +95,7 @@ class client {
     }
     
     sendDoorCommand (command) {
-        fetch("api/v1/" + command, { method: "GET" })
+        fetch("api/v1/" + command, { method: "GET", credentials: "include" })
         .then(res => {
             if (res.status === 200) {
                 //console.log(command + "  door command sent successfully")
