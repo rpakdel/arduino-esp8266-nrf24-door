@@ -75,7 +75,6 @@ void setup()
 
     startWifi();
     startServer();
-    startClient();
 }
 
 void startWifi()
@@ -106,24 +105,9 @@ void startServer()
     ESP_SERIAL.println(F("ESP_SERVER_STARTED"));
 }
 
-void startClient()
-{    
-    /*
-    ESP_SERIAL.println(F("ESP_GET"));
-
-    httpClient.beginRequest();
-    httpClient.get(AIO_FEED_URL);
-    // defined in aio.h file
-    httpClient.sendHeader(AIO_KEY_HEADER, AIO_KEY);
-    httpClient.endRequest();
-
-    int statusCode = httpClient.responseStatusCode();
-    String response = httpClient.responseBody();
-    ESP_SERIAL.println(statusCode);
-    ESP_SERIAL.println(response);
-    */
-}
 long prevPost = 0;
+long openPostCount = 0;
+char postBody[256];
 void postDoorStatus()
 {
     long m = millis();
@@ -136,21 +120,25 @@ void postDoorStatus()
 
     ESP_SERIAL.println(F("ESP_POST_DOOR_AIO"));
     int status = getDoorStatus();
+    if (status == HIGH)
+    {
+        openPostCount++;
+    }
+    else
+    {
+        openPostCount = 0;
+    }
+
+    sprintf(postBody, "{ \"value\": \"%i\" }\0", openPostCount);
+
     httpClient.beginRequest();
     httpClient.post(AIO_DATA_URL);
     // defined in aio.h file
     httpClient.sendHeader(AIO_KEY_HEADER, AIO_KEY);
     httpClient.sendHeader(AIO_CONTENT_TYPE, AIO_CONTENT_TYPE_APP_JSON);
-    httpClient.sendHeader(AIO_CONTENT_LENGTH, AIO_CONTENT_LENGTH_VALUE);
+    httpClient.sendHeader(AIO_CONTENT_LENGTH, strlen(postBody));
     httpClient.beginBody();
-    if (status == HIGH)
-    {
-        httpClient.print(AIO_DOOR_STATUS_HIGH);
-    }
-    else
-    {
-        httpClient.print(AIO_DOOR_STATUS_LOW);
-    }
+    httpClient.print(postBody);
     httpClient.endRequest();
 
     int statusCode = httpClient.responseStatusCode();
@@ -301,7 +289,7 @@ void handleClient(WiFiClient& client)
     }    
     else if (req.indexOf(F("GET /api/v1/status")) >= 0)
     {
-        ESP_SERIAL.println(F("ESP_WAPI_STATUS"));
+        //ESP_SERIAL.println(F("ESP_WAPI_STATUS"));
         int result = getDoorStatus();
         // status
         String s = FPSTR(http_status_200_OK);
