@@ -84,7 +84,7 @@ void startWifi()
     ESP_SERIAL.println();
     ESP_SERIAL.print(F("SSID "));
     ESP_SERIAL.println(MYSSID);
-
+    WiFi.mode(WIFI_STA);
     WiFi.begin(MYSSID, MYPASSWORD);
 
     while (WiFi.status() != WL_CONNECTED)
