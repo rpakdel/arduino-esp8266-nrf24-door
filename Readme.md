@@ -5,7 +5,12 @@
 
 ![Arduino + ESP8266 + NRF24L01 Garage door sensor and opener](https://i.imgur.com/5AiFq67m.jpg)
 
-* Wireless door sensor: https://media1.giphy.com/media/3o752bfTEIFtwjCC2I/giphy.gif
+* Wireless door sensor: 
+
+![](https://media.giphy.com/media/3o752bfTEIFtwjCC2I/200w_d.gif)
+
+https://giphy.com/gifs/3o752bfTEIFtwjCC2I/html5
+
 * The door sensor uses a generic window reed switch used commonly for home security (not operational yet).
 * The door sensor is a separate Arduino that talks to the base-station via NRF24L01.
 * RX pin on ESP8266 (ESP-01) is input for door status. HIGH = open, LOW = closed.
