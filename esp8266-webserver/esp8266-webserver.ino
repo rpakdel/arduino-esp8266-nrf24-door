@@ -179,7 +179,8 @@ void get_index_html(WiFiClient& client)
     s += FPSTR(newLine);
     s += FPSTR(newLine);
     s += FPSTR(index_html_FileContent);
-    clientWriteString(client, s);
+    const char* buffer = s.c_str();
+    clientWriteString(client, buffer);
 }
 
 int getMin(int a, int b)
@@ -192,21 +193,24 @@ int getMin(int a, int b)
     return b;
 }
 
-void clientWriteString(WiFiClient& client, String s)
+void clientWriteString(WiFiClient& client, const char* buffer)
 {
-    while (s.length() > 2000)
+    int packetSize = 2000;
+    int totLength = strlen(buffer);
+    int index = 0;
+    int remain = totLength - index;
+    int sendLength = getMin(remain, packetSize);
+    while (index < totLength)
     {
-        int endIndex = getMin(s.length(), 2000);
-        String ss = s.substring(0, endIndex);
-        const char* buffer = ss.c_str();
-        client.write(buffer, ss.length());
-        s = s.substring(endIndex);
+        client.write(&buffer[index], sendLength);
+        index += packetSize;
+        remain = totLength - index;
+        sendLength = getMin(remain, packetSize);
     }
 
-    if (s.length() > 0)
+    if (remain > 0)
     {
-        const char* buffer = s.c_str();
-        client.write(buffer, s.length());
+        client.write(&buffer[index], remain);
     }
 }
 
@@ -218,7 +222,8 @@ void get_client_js(WiFiClient& client)
     s += FPSTR(newLine);
     s += FPSTR(newLine);
     s += FPSTR(client_js_FileContent);
-    clientWriteString(client, s);
+    const char* buffer = s.c_str();
+    clientWriteString(client, buffer);
 }
 
 void get_style_css(WiFiClient& client)
@@ -229,13 +234,15 @@ void get_style_css(WiFiClient& client)
     s += FPSTR(newLine);
     s += FPSTR(newLine);
     s += FPSTR(style_css_FileContent);    
-    clientWriteString(client, s);
+    const char* buffer = s.c_str();
+    clientWriteString(client, buffer);
 }
 
 void get_favicon(WiFiClient& client)
 {
     String s = FPSTR(http_status_404_NOTFOUND);
-    clientWriteString(client, s);
+    const char* buffer = s.c_str();
+    clientWriteString(client, buffer);
 };
 
 
@@ -270,7 +277,7 @@ void handleClient(WiFiClient& client)
     {
         get_favicon(client);
     }
-    else if (req.indexOf(F("GET /api/v1/toggle")) >= 0)
+    else if (req.indexOf(F("POST /api/v1/toggle")) >= 0)
     {
         ESP_SERIAL.println(F("ESP_WAPI_TG"));
 
@@ -285,7 +292,8 @@ void handleClient(WiFiClient& client)
         // blank line indicates data
         s += FPSTR(newLine);
         s += FPSTR(F("Ok"));
-        clientWriteString(client, s);
+        const char* buffer = s.c_str();
+        clientWriteString(client, buffer);
     }    
     else if (req.indexOf(F("GET /api/v1/status")) >= 0)
     {
@@ -307,13 +315,15 @@ void handleClient(WiFiClient& client)
         {
             s += F("IsClosed");
         }
-        clientWriteString(client, s);
+        const char* buffer = s.c_str();
+        clientWriteString(client, buffer);
     }
     else
     {
         ESP_SERIAL.println(F("ESP_WAPI_UN"));
         String s = FPSTR(http_status_404_NOTFOUND);
-        clientWriteString(client, s);
+        const char* buffer = s.c_str();
+        clientWriteString(client, buffer);
     }
 }
 

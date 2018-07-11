@@ -22,22 +22,14 @@ class client {
         }
 
         this.commandEnum = {
-            Open: "open",
-            Close: "close",
             Toggle: "toggle"
         }
 
         this.doorStatus = this.doorStatusEnum.Unknown
-        this.openCloseMode = this.openCloseModeEnum.Toggle
 
         this.elements = elements
 
-        this.elements.open.addEventListener('click', this.openDoorCommand.bind(this))
-        this.elements.close.addEventListener('click', this.closeDoorCommand.bind(this))
         this.elements.toggle.addEventListener('click', this.toggleDoorCommand.bind(this))        
-        this.elements.mode.addEventListener('click', this.toggleMode.bind(this))        
-
-        this.applyOpenCloseModeToDOM(this.openCloseMode)
     }
 
     start() {
@@ -94,7 +86,7 @@ class client {
     }
     
     sendDoorCommand (command) {
-        fetch("api/v1/" + command, { method: "GET", credentials: "include" })
+        fetch("api/v1/" + command, { method: "POST", credentials: "include" })
         .then(res => {
             if (res.status === 200) {
                 //console.log(command + "  door command sent successfully")
@@ -119,15 +111,7 @@ class client {
             this.elements.commandStatus.className = "error"
         }
         setTimeout(() => this.elements.commandStatus.className = "hidden", 3000)
-    }
-
-    openDoorCommand() {
-        this.sendDoorCommand(this.commandEnum.Open)
-    }
-
-    closeDoorCommand() {
-        this.sendDoorCommand(this.commandEnum.Close)
-    }
+    }    
 
     toggleDoorCommand() {
         if (confirm("Toggle door?")) {
@@ -135,44 +119,14 @@ class client {
         } else {
             // Do nothing
         }
-    }
-
-    toggleMode() {
-        if (this.openCloseMode === this.openCloseModeEnum.OpenClose) {
-            this.openCloseMode = this.openCloseModeEnum.Toggle
-        } else {
-            this.openCloseMode = this.openCloseModeEnum.OpenClose
-        }
-        this.applyOpenCloseModeToDOM(this.openCloseMode)
-    }
-
-    applyOpenCloseModeToDOM(mode) {
-        switch(mode) {
-            case this.openCloseModeEnum.OpenClose:
-                this.elements.open.style.display = "flex"
-                this.elements.close.style.display = "flex"
-                this.elements.toggle.style.display = "none"
-                break;
-
-            case this.openCloseModeEnum.Toggle:
-                this.elements.open.style.display = "none"
-                this.elements.close.style.display = "none"
-                this.elements.toggle.style.display = "flex"
-                break;
-        }
-    }
+    }    
 }
 
 let elements = {
     body: document.body,
     status: document.getElementById("status"),
-    commandStatus: document.getElementById("commandStatus"),
-    open: document.getElementById("openDoor"),
-    close: document.getElementById("closeDoor"),
+    commandStatus: document.getElementById("commandStatus"),    
     toggle: document.getElementById("toggleDoor"),
-    mode: document.getElementById("mode")
 }
 let cl = new client(elements)
-cl.start();
-
-
+cl.start()
